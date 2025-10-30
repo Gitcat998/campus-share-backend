@@ -26,26 +26,31 @@ public interface StatsMapper {
     List<CommentStatsVO> selectCommentStats();
 
     /**
-     * 统计各分类的物品数量
+     * 统计各分类的物品数量（修复表名和字段名）
      * （过滤已删除的物品）
      */
     @Select("select " +
-            "c.id as categoryId, " +
-            "c.name as categoryName, " +
+            "t.id as categoryId, " +  // 分类表主键
+            "t.type_name as categoryName, " +  // 分类名称（实际字段是 type_name）
             "count(i.id) as itemCount " +
-            "from category c " +
-            "left join item i on c.id = i.category_id and i.is_delete = 0 " +
-            "group by c.id, c.name " +
+            "from item_type t " +  // 修复表名：category → item_type（数据库中实际表名）
+            "left join item i on t.id = i.item_type_id and i.is_delete = 0 " +  // 修复关联字段：category_id → item_type_id
+            "group by t.id, t.type_name " +  // 分组字段同步修正
             "order by itemCount desc")
     List<CategoryItemCountVO> selectCategoryItemCount();
 
     /**
      * 统计不同状态的物品数量
-     * （1-可借用，2-已借出，过滤已删除的物品）
+     * （补充状态0-待审核，与数据库状态定义一致）
      */
     @Select("select " +
             "status, " +
-            "case status when 1 then '可借用' when 2 then '已借出' else '未知' end as statusName, " +
+            "case status " +
+            "  when 0 then '待审核' " +  // 补充数据库中存在的状态0
+            "  when 1 then '可借用' " +
+            "  when 2 then '已借出' " +
+            "  when 3 then '已下架' " +  // 补充数据库中存在的状态3
+            "  else '未知' end as statusName, " +
             "count(id) as count " +
             "from item " +
             "where is_delete = 0 " +

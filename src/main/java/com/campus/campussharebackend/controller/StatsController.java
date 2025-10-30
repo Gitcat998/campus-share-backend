@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/stats")
-@PreAuthorize("hasRole('ADMIN')") // 仅管理员可访问统计接口
+@PreAuthorize("hasRole('管理员')") // 仅管理员可访问统计接口
 public class StatsController {
 
     @Resource

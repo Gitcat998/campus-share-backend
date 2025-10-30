@@ -28,6 +28,8 @@
             style="width: 200px; margin-right: 15px;"
             @change="handleFilterChange"
         >
+          <!-- 新增：全部分类选项 -->
+          <el-option label="全部分类" value=""></el-option>
           <el-option
               v-for="type in itemTypes"
               :key="type.id"
@@ -203,7 +205,7 @@ export default {
       pageSize: 10,
 
       // 筛选条件
-      itemTypeId: '',
+      itemTypeId: '', // 空表示全部分类
       searchName: '',
       itemTypes: [],
 
@@ -435,7 +437,7 @@ export default {
 
     // 重置筛选条件
     resetFilter() {
-      this.itemTypeId = ''
+      this.itemTypeId = '' // 重置为全部分类
       this.searchName = ''
       this.pageNum = 1
       this.selectedItems = []
@@ -552,6 +554,7 @@ export default {
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .admin-item-audit {
   padding: 20px;
   max-width: 1400px;

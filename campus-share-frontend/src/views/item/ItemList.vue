@@ -5,6 +5,8 @@
       <el-row :gutter="20">
         <el-col :span="6">
           <el-select v-model="filters.itemTypeId" placeholder="物品分类">
+            <!-- 新增：全部分类选项（value为空表示不筛选） -->
+            <el-option label="全部分类" value=""></el-option>
             <el-option
                 v-for="type in itemTypes"
                 :key="type.id"
@@ -15,6 +17,7 @@
         </el-col>
         <el-col :span="6">
           <el-select v-model="filters.status" placeholder="物品状态">
+            <el-option label="全状态" value=""></el-option> <!-- 补充全状态选项 -->
             <el-option label="待审核" value="0"></el-option>
             <el-option label="可借用" value="1"></el-option>
             <el-option label="已借出" value="2"></el-option>
@@ -64,6 +67,11 @@
       </el-card>
     </div>
 
+    <!-- 空状态处理 -->
+    <div v-if="itemList.length === 0 && total === 0" class="empty-state">
+      <el-empty description="暂无符合条件的物品"></el-empty>
+    </div>
+
     <!-- 分页 -->
     <el-pagination
         class="pagination"
@@ -91,8 +99,8 @@ export default {
         pageNum: 1,
         pageSize: 10,
         name: '', // 物品名称搜索
-        itemTypeId: '', // 分类筛选
-        status: '' // 状态筛选
+        itemTypeId: '', // 分类筛选（空表示全部分类）
+        status: '' // 状态筛选（空表示全状态）
       }
     }
   },
@@ -106,9 +114,8 @@ export default {
     async getItemTypes() {
       try {
         const res = await getItemTypes()
-        // 关键：分类数据在res.data中（响应拦截器返回{code, msg, data}）
         if (res.code === 200 && res.data) {
-          this.itemTypes = this.flattenTree(res.data) // 传入res.data而非res
+          this.itemTypes = this.flattenTree(res.data)
         } else {
           this.$message.error('获取分类失败：' + (res.msg || '数据格式错误'))
         }
@@ -140,11 +147,8 @@ export default {
         console.log('物品列表接口响应：', res);
 
         if (res.code === 200 && res.data) {
-          // 关键修复：从res.data.records获取物品列表
           this.itemList = res.data.records || [];
-          // 同时确认total的字段是否正确（后端返回data.total=0，可能也是records的总条数）
           this.total = res.data.total || res.data.records.length;
-          console.log('解析后的物品列表：', this.itemList); // 此时应显示12条数据
         } else {
           this.$message.error('获取物品列表失败：' + (res.msg || '数据格式错误'));
           this.itemList = [];
@@ -166,8 +170,8 @@ export default {
       this.filters = {
         ...this.filters,
         name: '',
-        itemTypeId: '',
-        status: ''
+        itemTypeId: '', // 重置为全部分类
+        status: '' // 重置为全状态
       }
       this.getItemList()
     },
@@ -255,5 +259,11 @@ export default {
 }
 .pagination {
   text-align: right;
+  margin-top: 20px;
+}
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 50px 0;
 }
 </style>
