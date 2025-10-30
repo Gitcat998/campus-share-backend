@@ -41,11 +41,19 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     public StatsOverviewVO getStatsOverview() {
-        // 整合所有统计数据
         StatsOverviewVO overview = new StatsOverviewVO();
-        overview.setCommentStats(getCommentStats());
-        overview.setCategoryItemStats(getCategoryItemCount());
-        overview.setItemStatusStats(getItemStatusCount());
+        List<CommentStatsVO> commentStats = getCommentStats();
+        List<CategoryItemCountVO> categoryStats = getCategoryItemCount();
+        List<ItemStatusCountVO> statusStats = getItemStatusCount();
+
+        // 打印日志确认数据
+        System.out.println("评价统计数据量：" + commentStats.size());
+        System.out.println("分类统计数据量：" + categoryStats.size());
+        System.out.println("状态统计数据量：" + statusStats.size());
+
+        overview.setCommentStats(commentStats);
+        overview.setCategoryItemStats(categoryStats);
+        overview.setItemStatusStats(statusStats);
         return overview;
     }
 }
