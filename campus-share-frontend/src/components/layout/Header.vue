@@ -1,46 +1,56 @@
 <template>
   <el-header class="header">
+    <!-- Logo 保持在左侧 -->
     <div class="logo">CampusShare 校园闲置</div>
-    <el-menu
-        class="main-menu"
-        :default-active="activePath"
-        mode="horizontal"
-        @select="handleSelect"
-        router
-    >
-      <!-- 调试信息 -->
-      <el-menu-item v-if="debugMode" style="color: #ff6b6b !important;">
-        路径: {{ activePath }} | 登录: {{ isLogin }} | 管理员: {{ isAdmin }}
-      </el-menu-item>
 
-      <!-- 1. 公共入口：物品列表 -->
-      <el-menu-item index="/items">物品列表</el-menu-item>
+    <!-- 菜单容器：通过 flex 推到右侧 -->
+    <div class="menu-wrapper">
+      <el-menu
+          ref="mainMenu"
+          class="main-menu"
+          :default-active="activePath"
+          mode="horizontal"
+          @select="handleSelect"
+          router
+      >
+        <!-- 1. 公共功能区 -->
+        <el-menu-item index="/items">物品列表</el-menu-item>
 
-      <!-- 2. 已登录用户入口：发布物品 -->
-      <el-menu-item index="/item/publish" v-if="isLogin">发布物品</el-menu-item>
+        <!-- 2. 用户专属区 -->
+        <template v-if="isLogin">
+          <el-menu-item index="/item/publish">发布物品</el-menu-item>
 
-      <!-- 3. 个人中心下拉菜单 -->
-      <el-submenu index="/user-center" v-if="isLogin && !isAdmin">
-        <template #title>个人中心</template>
-        <el-menu-item index="/user/profile">个人信息</el-menu-item>
-        <el-menu-item index="/borrow-applies/my">我的申请</el-menu-item>
-        <el-menu-item index="/user/borrow-records">我的借用记录</el-menu-item>
-      </el-submenu>
+          <el-submenu index="/user-center" v-if="!isAdmin">
+            <template #title>个人中心</template>
+            <el-menu-item index="/user/profile">个人信息</el-menu-item>
+            <el-menu-item index="/borrow-applies/my">我的申请</el-menu-item>
+            <el-menu-item index="/user/borrow-records">我的借用记录</el-menu-item>
+          </el-submenu>
 
-      <!-- 4. 管理员下拉菜单 -->
-      <el-submenu index="/admin-center" v-if="isAdmin">
-        <template #title>管理员中心</template>
-        <el-menu-item index="/admin/audit">物品审核</el-menu-item>
-        <el-menu-item index="/admin/stats">数据统计</el-menu-item>
-      </el-submenu>
+          <el-submenu index="/admin-center" v-if="isAdmin">
+            <template #title>管理员中心</template>
+            <el-menu-item index="/admin/audit">物品审核</el-menu-item>
+            <el-menu-item index="/admin/stats">数据统计</el-menu-item>
+          </el-submenu>
+        </template>
 
-      <!-- 5. 未登录入口 -->
-      <el-menu-item index="/login" v-if="!isLogin">登录</el-menu-item>
-      <el-menu-item index="/register" v-if="!isLogin">注册</el-menu-item>
+        <template v-else>
+          <el-menu-item index="/login">登录</el-menu-item>
+          <el-menu-item index="/register">注册</el-menu-item>
+        </template>
 
-      <!-- 6. 退出 -->
-      <el-menu-item v-if="isLogin" @click="handleLogout" style="cursor: pointer;">退出</el-menu-item>
-    </el-menu>
+        <!-- 3. 操作区 -->
+        <div class="menu-actions">
+          <el-menu-item
+              v-if="isLogin"
+              @click="handleLogout"
+              style="cursor: pointer;"
+          >
+            退出
+          </el-menu-item>
+        </div>
+      </el-menu>
+    </div>
   </el-header>
 </template>
 
@@ -52,53 +62,53 @@ export default {
   name: 'AppHeader',
   data() {
     return {
-      debugMode: true // 生产环境设为false
+      // 已移除debugMode相关配置
     }
   },
   computed: {
-    ...mapState('user', ['userInfo', 'token']), // 从Vuex获取token和用户信息
+    ...mapState('user', ['userInfo', 'token']),
     activePath() {
       const path = this.$route.path
-      // 个人中心子菜单匹配
-      if (['/user/profile', '/borrow-applies/my', '/user/borrow-records'].includes(path)) {
-        return '/user-center'
-      }
-      // 管理员中心子菜单匹配
-      if (['/admin/audit', '/admin/stats'].includes(path)) {
-        return '/admin-center'
-      }
-      return path
+      const userSubPaths = new Set(['/user/profile', '/borrow-applies/my', '/user/borrow-records'])
+      const adminSubPaths = new Set(['/admin/audit', '/admin/stats'])
+      return userSubPaths.has(path) ? '/user-center' :
+          adminSubPaths.has(path) ? '/admin-center' : path
     },
     isLogin() {
-      return !!this.token // 基于Vuex的token判断登录状态
+      return !!this.token
     },
     isAdmin() {
-      return this.userInfo && this.userInfo.roleName === '管理员'
+      return this.userInfo?.roleName === '管理员'
     }
   },
-  mounted() {
-    console.log('=== 导航组件挂载完成 ===')
-    console.log('当前路由:', this.$route)
-    console.log('用户状态:', this.$store.state.user)
+  watch: {
+    token() {
+      this.$forceUpdate()
+    },
+    $route: {
+      immediate: true,
+      handler() {
+        this.$nextTick(() => {
+          this.$refs.mainMenu?.updateActiveName()
+        })
+      }
+    }
   },
   methods: {
     handleSelect(path) {
-      console.log('菜单点击:', path)
-      // 路由跳转由el-menu的router模式自动处理
+      console.log('菜单选择:', path)
     },
     handleLogout() {
       this.$confirm('确定要退出登录吗？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
-      }).then(() => {
+      }).then(async () => {
         removeToken()
         this.$store.commit('user/RESET_STATE')
+        await this.$nextTick()
+        this.$router.push('/login')
         this.$message.success('退出成功')
-        // 跳转登录页并强制刷新组件
-        this.$router.push('/login').then(() => {
-          this.$forceUpdate()
-        })
       }).catch(() => {})
     }
   }
@@ -109,28 +119,70 @@ export default {
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   background-color: #409eff;
   padding: 0 20px;
   height: 60px;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: space-between;
 }
+
 .logo {
   color: white;
   font-size: 20px;
   font-weight: bold;
+  white-space: nowrap;
+  margin-right: 20px;
+}
+
+.menu-wrapper {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  width: auto;
 }
 
 .main-menu {
   background-color: transparent !important;
   border-bottom: none !important;
+  display: flex;
+  align-items: center;
+}
+
+.menu-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 
 .main-menu .el-menu-item {
   color: white !important;
   font-size: 14px;
+  padding: 0 15px !important;
 }
 
-/* 兼容不同Vue版本的样式穿透 */
+:deep(.main-menu .el-submenu) {
+  margin: 0 5px;
+}
+
+@media screen and (max-width: 992px) {
+  .logo {
+    font-size: 16px;
+    margin-right: 10px;
+  }
+  .main-menu .el-menu-item {
+    font-size: 13px;
+    padding: 0 10px !important;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .main-menu .el-menu-item {
+    font-size: 12px;
+    padding: 0 8px !important;
+  }
+}
+
 :deep(.main-menu .el-menu-item:not(.is-disabled):hover),
 :deep(.main-menu .el-menu-item.is-active) {
   background-color: rgba(255, 255, 255, 0.2) !important;
@@ -162,6 +214,5 @@ export default {
 :deep(.main-menu .el-submenu__popper .el-menu-item:hover),
 :deep(.main-menu .el-submenu__popper .el-menu-item.is-active) {
   background-color: rgba(255, 255, 255, 0.3) !important;
-  color: white !important;
 }
 </style>

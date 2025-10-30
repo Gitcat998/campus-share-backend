@@ -12,7 +12,7 @@ public class CorsConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         // 允许前端域名（开发环境）
-        config.addAllowedOrigin("http://localhost:8093");
+        config.addAllowedOrigin("http://localhost:8082");
         // 允许携带Cookie（前端请求可能需要传递token）
         config.setAllowCredentials(true);
         // 允许所有请求方法（GET、POST、OPTIONS等）
