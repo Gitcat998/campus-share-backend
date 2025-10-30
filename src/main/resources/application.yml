@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/campus_share?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root  # 你的数据库用户名
+    password: 123456  # 你的数据库密码
+  servlet:
+    multipart:
+      max-file-size: 10MB  # 最大单文件大小
+      max-request-size: 50MB  # 最大请求大小
+
+mybatis-plus:
+  # 扫描 resources 下与 Mapper 接口同包结构的 XML 文件
+  mapper-locations: classpath:com/campus/campussharebackend/mapper/*.xml
+  type-aliases-package: com.campus.campussharebackend.entity
+  configuration:
+    map-underscore-to-camel-case: true  # 下划线转驼峰（必须开启，否则字段映射可能出错）
+
+server:
+  port: 8080  # 后端端口
+
+# JWT配置
+jwt:
+  secret: Y2FtcHVzLXNjaGFyZS1qd3Qtc2VjcmV0LWtleS0yMDI1  # 密钥（实际项目建议复杂些）
+  expiration: 86400000  # 过期时间（24小时，单位毫秒）
+
+# 文件上传配置
+file:
+  upload:
+    path: D:/campus-share/upload/  # 本地存储路径（根据实际修改）
+  access:
+    url: http://localhost:8080/images/  # 图片访问URL前缀

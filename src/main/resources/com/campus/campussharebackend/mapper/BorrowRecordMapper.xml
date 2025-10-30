@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.campus.campussharebackend.mapper.BorrowRecordMapper">
+
+    <!-- 分页查询借用记录（关联申请单和物品表） -->
+    <select id="selectRecordList" resultType="com.campus.campussharebackend.vo.BorrowRecordVO">
+        SELECT
+        br.id,
+        br.apply_id AS applyId,
+        ba.item_id AS itemId,
+        i.name AS itemName,
+        ba.user_id AS userId,
+        u.username AS username,
+        br.start_time AS startTime,
+        br.end_time AS endTime,
+        br.return_time AS returnTime,
+        br.status AS status,
+        br.create_time AS createTime
+        FROM borrow_record br
+        LEFT JOIN borrow_apply ba ON br.apply_id = ba.id
+        LEFT JOIN item i ON ba.item_id = i.id
+        LEFT JOIN user u ON ba.user_id = u.id
+        ${ew.customSqlSegment}  <!-- 动态条件会包含 WHERE ba.user_id = ? 和 ORDER BY br.create_time DESC -->
+    </select>
+
+    <!-- 根据申请ID查询记录 -->
+    <select id="selectByApplyId" resultType="com.campus.campussharebackend.entity.BorrowRecord">
+        SELECT * FROM borrow_record WHERE apply_id = #{applyId}
+    </select>
+
+</mapper>

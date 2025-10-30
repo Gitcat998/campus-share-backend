@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.campus.campussharebackend.mapper.BorrowApplyMapper">
+
+    <!-- 分页查询申请列表（删除 ba.reason 字段） -->
+
+    <!-- 1. 主查询：添加status筛选 -->
+    <select id="selectApplyList" resultType="com.campus.campussharebackend.vo.BorrowApplyListVO">
+        SELECT
+        ba.id,
+        ba.item_id AS itemId,
+        i.name AS itemName,
+        ii.image_url AS itemImage,
+        ba.user_id AS userId,
+        u.real_name AS username,
+        ba.expected_borrow_time AS expectedBorrowTime,
+        ba.expected_return_time AS expectedReturnTime,
+        ba.status,
+        ba.apply_time AS applyTime,
+        ba.update_time AS auditTime,
+        ba.reject_reason AS rejectReason
+        FROM borrow_apply ba
+        LEFT JOIN item i ON ba.item_id = i.id AND i.is_delete = 0
+        LEFT JOIN item_image ii ON i.id = ii.item_id AND ii.is_main = 1
+        LEFT JOIN user u ON ba.user_id = u.id AND u.is_delete = 0
+        WHERE 1=1
+        <if test="isAdmin == 0">
+            AND ba.user_id = #{userId}
+        </if>
+        <!-- 新增：根据status筛选 -->
+        <if test="status != null">
+            AND ba.status = #{status}
+        </if>
+        ORDER BY ba.apply_time DESC
+    </select>
+
+    <!-- 2. COUNT查询：同步添加status筛选 -->
+    <select id="selectApplyList_COUNT" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT ba.id)
+        FROM borrow_apply ba
+        LEFT JOIN item i ON ba.item_id = i.id AND i.is_delete = 0
+        LEFT JOIN user u ON ba.user_id = u.id AND u.is_delete = 0
+        WHERE 1=1
+        <if test="isAdmin == 0">
+            AND ba.user_id = #{userId}
+        </if>
+        <!-- 新增：根据status筛选 -->
+        <if test="status != null">
+            AND ba.status = #{status}
+        </if>
+    </select>
+
+    <!-- 查询申请详情（同样删除 ba.reason 字段） -->
+    <select id="selectApplyDetailById" resultType="com.campus.campussharebackend.vo.BorrowApplyListVO">
+        SELECT
+        ba.id,
+        ba.item_id,
+        i.name AS itemName,
+        ba.user_id,
+        u.real_name AS username,
+        ba.expected_borrow_time AS startTime,
+        ba.expected_return_time AS endTime,
+        ba.status,  <!-- 移除 ba.reason -->
+        ba.apply_time,
+        ba.update_time AS audit_time,
+        ba.reject_reason
+        FROM borrow_apply ba
+        LEFT JOIN item i ON ba.item_id = i.id
+        LEFT JOIN user u ON ba.user_id = u.id
+        WHERE ba.id = #{applyId}
+    </select>
+
+    <!-- 查询重复申请数量（无需修改） -->
+    <select id="countRepeatApplications" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM borrow_apply
+        WHERE item_id = #{itemId}
+          AND user_id = #{userId}
+          AND status IN (#{status1}, #{status2})
+    </select>
+
+</mapper>
