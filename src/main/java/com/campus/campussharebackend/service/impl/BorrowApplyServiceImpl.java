@@ -1,5 +1,6 @@
 package com.campus.campussharebackend.service.impl;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -25,6 +26,8 @@ import java.time.LocalDateTime;
 
 @Service
 public class BorrowApplyServiceImpl extends ServiceImpl<BorrowApplyMapper, BorrowApply> implements BorrowApplyService {
+
+    private static final Logger log = LoggerFactory.getLogger(BorrowApplyServiceImpl.class);
 
     @Resource
     private BorrowApplyMapper borrowApplyMapper;
@@ -115,7 +118,7 @@ public class BorrowApplyServiceImpl extends ServiceImpl<BorrowApplyMapper, Borro
 
         // 2. 校验审核人是管理员
         User admin = userMapper.selectById(adminId);
-        if (admin == null || !"管理员".equals(admin.getName())) {
+        if (admin == null || admin.getRoleId() != 2L) { // 管理员role_id=2
             throw new BusinessException("无审核权限（需管理员）");
         }
 
@@ -181,24 +184,41 @@ public class BorrowApplyServiceImpl extends ServiceImpl<BorrowApplyMapper, Borro
             Integer pageSize,
             Long userId,
             Integer isAdmin,
-            Integer status) { // 新增：接收status参数
+            Integer status) {
+
+        // 添加详细日志
+        log.info("=== 查询申请列表 Service ===");
+        log.info("参数 - pageNum: {}, pageSize: {}, userId: {}, isAdmin: {}, status: {}",
+                pageNum, pageSize, userId, isAdmin, status);
 
         Page<BorrowApplyListVO> page = new Page<>(pageNum, pageSize);
 
-        // 调用COUNT方法时传递status
-        Long total = borrowApplyMapper.selectApplyList_COUNT(userId, isAdmin, status);
-        page.setTotal(total);
+        try {
+            // 调用COUNT方法时传递status
+            Long total = borrowApplyMapper.selectApplyList_COUNT(userId, isAdmin, status);
+            page.setTotal(total);
+            log.info("COUNT查询结果 - 总记录数: {}", total);
 
-        // 调用主查询方法时传递status
-        IPage<BorrowApplyListVO> applyPage = borrowApplyMapper.selectApplyList(
-                page, userId, isAdmin, status);
-        page.setRecords(applyPage.getRecords());
+            // 调用主查询方法时传递status
+            IPage<BorrowApplyListVO> applyPage = borrowApplyMapper.selectApplyList(
+                    page, userId, isAdmin, status);
+            log.info("主查询结果 - 实际记录数: {}", applyPage.getRecords().size());
 
-        // 转换状态文本
-        page.getRecords().forEach(vo -> {
-            vo.setStatusText(convertApplyStatus(vo.getStatus()));
-        });
+            page.setRecords(applyPage.getRecords());
 
+            // 转换状态文本并记录详细信息
+            page.getRecords().forEach(vo -> {
+                vo.setStatusText(convertApplyStatus(vo.getStatus()));
+                // 修复：使用 getUsername() 而不是 getUserName()
+                log.info("申请详情 - ID: {}, 物品: {}, 用户: {}, 状态: {}",
+                        vo.getId(), vo.getItemName(), vo.getUsername(), vo.getStatus());
+            });
+
+        } catch (Exception e) {
+            log.error("查询申请列表异常: {}", e.getMessage(), e);
+        }
+
+        log.info("=== 查询申请列表 Service 结束 ===");
         return page;
     }
 

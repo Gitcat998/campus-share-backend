@@ -1,42 +1,31 @@
+// src/api/borrowApply.js
 import request from '../utils/request'
 
 /**
- * 提交借用申请
- * @param {Object} data - 申请信息
- * @param {number} data.itemId - 物品ID
- * @param {string} data.startTime - 借用开始时间（yyyy-MM-dd HH:mm:ss）
- * @param {string} data.endTime - 借用结束时间（yyyy-MM-MM-dd HH:mm:ss）
- * @param {string} data.reason - 借用理由（必填，优化为非可选）
- * @returns {Promise}
+ * 提交借用申请（用户端）
  */
 export function submitBorrowApply(data) {
     return request({
-        url: '/borrows/apply',
+        url: '/borrows/apply', // 匹配后端 @PostMapping("/apply")
         method: 'post',
         data
     })
 }
 
 /**
- * 获取我的借用申请列表
- * @param {Object} [params] - 筛选和分页参数
- * @param {number} [params.status] - 申请状态（0-待审核，1-已同意，2-已拒绝）
- * @param {number} [params.pageNum=1] - 页码（默认第一页）
- * @param {number} [params.pageSize=10] - 每页条数（默认10条）
- * @returns {Promise}
+ * 获取我的借用申请列表（用户端）
  */
 export function getMyBorrowApplies(params = {}) {
     const defaultParams = { pageNum: 1, pageSize: 10 }
     return request({
-        url: '/borrows/applies', // 接口路径正确，无需修改
+        url: '/borrows/applies', // 匹配后端 @GetMapping("/applies")
         method: 'get',
         params: { ...defaultParams, ...params }
     })
 }
+
 /**
- * 取消借用申请（仅待审核状态可取消）
- * @param {number} applyId - 申请ID
- * @returns {Promise}
+ * 取消借用申请（用户端）
  */
 export function cancelApply(applyId) {
     return request({
@@ -45,29 +34,55 @@ export function cancelApply(applyId) {
     })
 }
 
-// 新增：获取我的借用记录（已通过的申请，进行中/已归还）
 /**
- * 获取我的借用记录
- * @param {Object} [params] - 筛选参数
- * @param {number} [params.status] - 记录状态（1-进行中，2-已归还）
- * @param {number} [params.pageNum=1] - 页码
- * @param {number} [params.pageSize=10] - 每页条数
- * @returns {Promise}
+ * 获取我的借用记录（用户端）
  */
 export function getMyBorrowRecords(params = {}) {
     const defaultParams = { pageNum: 1, pageSize: 10 }
     return request({
-        url: '/borrows/records',
+        url: '/borrows/records', // 匹配后端 @GetMapping("/records")
         method: 'get',
         params: { ...defaultParams, ...params }
     })
 }
 
-// 5. 确认归还物品（管理员，适配后端PUT /borrows/records/{recordId}/return）
+/**
+ * 确认归还物品（管理员）
+ */
 export function confirmReturn(recordId, data) {
     return request({
-        url: `/borrows/records/${recordId}/return`,
+        url: `/borrows/records/${recordId}/return`, // 匹配后端 @PutMapping("/records/{recordId}/return")
         method: 'put',
-        data // { returnTime: '2025-10-30' }
+        data
+    })
+}
+
+// 管理员查询所有借用申请（适配后端接口）
+export function queryBorrowApplies(params = {}) {
+    const defaultParams = { pageNum: 1, pageSize: 10 }
+    return request({
+        url: '/borrows/applies', // 后端管理员和用户共用此接口，通过权限区分数据
+        method: 'get',
+        params: { ...defaultParams, ...params }
+    })
+}
+
+// 管理员审核借用申请（适配后端接口）
+export function auditBorrowApply(applyId, status, rejectReason) {
+    // 添加参数验证
+    if (!applyId || applyId === 'null' || applyId === 'undefined') {
+        console.error('auditBorrowApply: applyId为空或无效:', applyId)
+        return Promise.reject(new Error('申请ID不能为空'))
+    }
+
+    console.log('调用审核API，applyId:', applyId, 'status:', status)
+
+    return request({
+        url: `/borrows/applies/${applyId}/audit`,
+        method: 'put',
+        data: {
+            status,
+            rejectReason: rejectReason || ''
+        }
     })
 }

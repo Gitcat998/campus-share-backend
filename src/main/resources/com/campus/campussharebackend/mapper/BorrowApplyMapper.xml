@@ -4,9 +4,7 @@
 
 <mapper namespace="com.campus.campussharebackend.mapper.BorrowApplyMapper">
 
-    <!-- 分页查询申请列表（删除 ba.reason 字段） -->
-
-    <!-- 1. 主查询：添加status筛选 -->
+    <!-- 1. 主查询：修复查询逻辑 -->
     <select id="selectApplyList" resultType="com.campus.campussharebackend.vo.BorrowApplyListVO">
         SELECT
         ba.id,
@@ -14,7 +12,7 @@
         i.name AS itemName,
         ii.image_url AS itemImage,
         ba.user_id AS userId,
-        u.real_name AS username,
+        u.real_name AS username,  <!-- 修改为 real_name -->
         ba.expected_borrow_time AS expectedBorrowTime,
         ba.expected_return_time AS expectedReturnTime,
         ba.status,
@@ -22,47 +20,47 @@
         ba.update_time AS auditTime,
         ba.reject_reason AS rejectReason
         FROM borrow_apply ba
-        LEFT JOIN item i ON ba.item_id = i.id AND i.is_delete = 0
+        LEFT JOIN item i ON ba.item_id = i.id
         LEFT JOIN item_image ii ON i.id = ii.item_id AND ii.is_main = 1
-        LEFT JOIN user u ON ba.user_id = u.id AND u.is_delete = 0
+        LEFT JOIN user u ON ba.user_id = u.id
         WHERE 1=1
-        <if test="isAdmin == 0">
+        <if test="isAdmin != null and isAdmin == 0">
             AND ba.user_id = #{userId}
         </if>
-        <!-- 新增：根据status筛选 -->
         <if test="status != null">
             AND ba.status = #{status}
         </if>
         ORDER BY ba.apply_time DESC
     </select>
 
-    <!-- 2. COUNT查询：同步添加status筛选 -->
+    <!-- 2. COUNT查询：同步修复 -->
     <select id="selectApplyList_COUNT" resultType="java.lang.Long">
-        SELECT COUNT(DISTINCT ba.id)
+        SELECT COUNT(*)
         FROM borrow_apply ba
-        LEFT JOIN item i ON ba.item_id = i.id AND i.is_delete = 0
-        LEFT JOIN user u ON ba.user_id = u.id AND u.is_delete = 0
+        LEFT JOIN item i ON ba.item_id = i.id
+        LEFT JOIN user u ON ba.user_id = u.id
         WHERE 1=1
-        <if test="isAdmin == 0">
+        <!-- 修复权限判断逻辑 -->
+        <if test="isAdmin != null and isAdmin == 0">
             AND ba.user_id = #{userId}
         </if>
-        <!-- 新增：根据status筛选 -->
+        <!-- 根据status筛选 -->
         <if test="status != null">
             AND ba.status = #{status}
         </if>
     </select>
 
-    <!-- 查询申请详情（同样删除 ba.reason 字段） -->
+    <!-- 其他查询保持不变 -->
     <select id="selectApplyDetailById" resultType="com.campus.campussharebackend.vo.BorrowApplyListVO">
         SELECT
         ba.id,
         ba.item_id,
         i.name AS itemName,
         ba.user_id,
-        u.real_name AS username,
+        u.real_name AS username,  <!-- 修改为 real_name -->
         ba.expected_borrow_time AS startTime,
         ba.expected_return_time AS endTime,
-        ba.status,  <!-- 移除 ba.reason -->
+        ba.status,
         ba.apply_time,
         ba.update_time AS audit_time,
         ba.reject_reason
@@ -72,7 +70,6 @@
         WHERE ba.id = #{applyId}
     </select>
 
-    <!-- 查询重复申请数量（无需修改） -->
     <select id="countRepeatApplications" resultType="java.lang.Long">
         SELECT COUNT(*) FROM borrow_apply
         WHERE item_id = #{itemId}

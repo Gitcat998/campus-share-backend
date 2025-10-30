@@ -10,9 +10,9 @@
             <el-carousel-item v-for="(url, index) in item.imageUrls" :key="index">
               <img
                   :src="resolveImgUrl(url)"
-              alt="物品图片"
-              class="carousel-img"
-              @error="handleImgError($event)"
+                  alt="物品图片"
+                  class="carousel-img"
+                  @error="handleImgError($event)"
               >
             </el-carousel-item>
           </el-carousel>
@@ -67,7 +67,7 @@
               <p class="item-desc">{{ item.description || '暂无描述' }}</p>
             </div>
 
-            <!-- 操作按钮（item加载完成后再渲染，避免权限判断错误） -->
+            <!-- 操作按钮（移除编辑按钮） -->
             <div class="action-buttons" v-if="Object.keys(item).length > 0">
               <!-- 普通用户：可借用时显示申请按钮 -->
               <el-button
@@ -78,14 +78,7 @@
                 申请借用
               </el-button>
 
-              <!-- 发布者：编辑/下架按钮 -->
-              <el-button
-                  type="success"
-                  @click="goToEdit"
-                  v-if="isPublisher"
-              >
-                编辑物品
-              </el-button>
+              <!-- 发布者：仅保留下架按钮（移除编辑按钮） -->
               <el-button
                   type="warning"
                   @click="handleOffline"
@@ -287,13 +280,6 @@ export default {
         name: 'BorrowApply', // 使用路由名称
         params: { itemId: this.itemId } // 通过 params 传递
       });
-    },
-
-
-
-    // 跳转到物品编辑页
-    goToEdit() {
-      this.$router.push(`/item/edit/${this.itemId}`)
     },
 
     // 审核/下架操作

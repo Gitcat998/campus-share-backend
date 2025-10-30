@@ -69,6 +69,7 @@ const privateRoutes = [
         component: () => import('../views/user/MyBorrowRecords.vue'),
         meta: { title: '我的借用记录' }
     }
+
 ]
 
 // 管理员路由
@@ -79,6 +80,14 @@ const adminRoutes = [
         component: () => import('../views/admin/ItemAudit.vue'),
         meta: { title: '物品审核', requireAdmin: true }
     },
+
+    {
+        path: '/admin/borrow-apply-audit',  // 新增路由
+        name: 'BorrowApplyAudit',
+        component: () => import('../views/admin/BorrowApplyAudit.vue'),  // 对应组件路径
+        meta: { title: '借用申请审核', requireAdmin: true }
+    },
+
     {
         path: '/admin/stats',
         name: 'AdminStats',

@@ -1,54 +1,54 @@
 <template>
   <el-header class="header">
-    <!-- Logo 保持在左侧 -->
     <div class="logo">CampusShare 校园闲置</div>
 
-    <!-- 菜单容器：通过 flex 推到右侧 -->
     <div class="menu-wrapper">
+      <!-- 移除 ref，改用 :default-active 自动绑定激活状态 -->
       <el-menu
-          ref="mainMenu"
           class="main-menu"
           :default-active="activePath"
-          mode="horizontal"
-          @select="handleSelect"
-          router
+      mode="horizontal"
+      @select="handleSelect"
+      router
       >
-        <!-- 1. 公共功能区 -->
-        <el-menu-item index="/items">物品列表</el-menu-item>
+      <!-- 公共功能区 -->
+      <el-menu-item index="/items">物品列表</el-menu-item>
 
-        <!-- 2. 用户专属区 -->
-        <template v-if="isLogin">
-          <el-menu-item index="/item/publish">发布物品</el-menu-item>
+      <!-- 用户专属区 -->
+      <template v-if="isLogin">
+        <el-menu-item index="/item/publish">发布物品</el-menu-item>
 
-          <el-submenu index="/user-center" v-if="!isAdmin">
-            <template #title>个人中心</template>
-            <el-menu-item index="/user/profile">个人信息</el-menu-item>
-            <el-menu-item index="/borrow-applies/my">我的申请</el-menu-item>
-            <el-menu-item index="/user/borrow-records">我的借用记录</el-menu-item>
-          </el-submenu>
+        <el-submenu index="/user-center" v-if="!isAdmin">
+          <template #title>个人中心</template>
+          <el-menu-item index="/user/profile">个人信息</el-menu-item>
+          <el-menu-item index="/borrow-applies/my">我的申请</el-menu-item>
+          <el-menu-item index="/user/borrow-records">我的借用记录</el-menu-item>
+        </el-submenu>
 
-          <el-submenu index="/admin-center" v-if="isAdmin">
-            <template #title>管理员中心</template>
-            <el-menu-item index="/admin/audit">物品审核</el-menu-item>
-            <el-menu-item index="/admin/stats">数据统计</el-menu-item>
-          </el-submenu>
-        </template>
+        <!-- 管理员中心 -->
+        <el-submenu index="/admin-center" v-if="isAdmin">
+          <template #title>管理员中心</template>
+          <el-menu-item index="/admin/audit">物品审核</el-menu-item>
+          <el-menu-item index="/admin/borrow-apply-audit">借用申请审核</el-menu-item>
+          <el-menu-item index="/admin/stats">数据统计</el-menu-item>
+        </el-submenu>
+      </template>
 
-        <template v-else>
-          <el-menu-item index="/login">登录</el-menu-item>
-          <el-menu-item index="/register">注册</el-menu-item>
-        </template>
+      <template v-else>
+        <el-menu-item index="/login">登录</el-menu-item>
+        <el-menu-item index="/register">注册</el-menu-item>
+      </template>
 
-        <!-- 3. 操作区 -->
-        <div class="menu-actions">
-          <el-menu-item
-              v-if="isLogin"
-              @click="handleLogout"
-              style="cursor: pointer;"
-          >
-            退出
-          </el-menu-item>
-        </div>
+      <!-- 操作区 -->
+      <div class="menu-actions">
+        <el-menu-item
+            v-if="isLogin"
+            @click="handleLogout"
+            style="cursor: pointer;"
+        >
+          退出
+        </el-menu-item>
+      </div>
       </el-menu>
     </div>
   </el-header>
@@ -61,18 +61,20 @@ import { removeToken } from '@/utils/auth'
 export default {
   name: 'AppHeader',
   data() {
-    return {
-      // 已移除debugMode相关配置
-    }
+    return {}
   },
   computed: {
     ...mapState('user', ['userInfo', 'token']),
+    // 核心：通过路由自动计算激活路径，无需手动调用方法
     activePath() {
       const path = this.$route.path
       const userSubPaths = new Set(['/user/profile', '/borrow-applies/my', '/user/borrow-records'])
-      const adminSubPaths = new Set(['/admin/audit', '/admin/stats'])
-      return userSubPaths.has(path) ? '/user-center' :
-          adminSubPaths.has(path) ? '/admin-center' : path
+      const adminSubPaths = new Set(['/admin/audit', '/admin/borrow-apply-audit', '/admin/stats'])
+
+      // 自动匹配父菜单
+      if (userSubPaths.has(path)) return '/user-center'
+      if (adminSubPaths.has(path)) return '/admin-center'
+      return path
     },
     isLogin() {
       return !!this.token
@@ -82,16 +84,12 @@ export default {
     }
   },
   watch: {
-    token() {
+    // 路由变化时强制更新组件，确保 activePath 生效
+    $route() {
       this.$forceUpdate()
     },
-    $route: {
-      immediate: true,
-      handler() {
-        this.$nextTick(() => {
-          this.$refs.mainMenu?.updateActiveName()
-        })
-      }
+    token() {
+      this.$forceUpdate()
     }
   },
   methods: {
@@ -116,6 +114,7 @@ export default {
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .header {
   display: flex;
   align-items: center;
